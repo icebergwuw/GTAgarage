@@ -37,7 +37,7 @@ export function Hud({
   onReset,
   onExport,
 }: Props) {
-  const chips = shopMode ? kindFilters.filter((item) => item.id !== null) : kindFilters
+  const chips = kindFilters
   const shopGroup = kindFilter ? slotGroupByKind[kindFilter] : null
   const shopUsage = kindFilter ? usageForKind(ownedIds, kindFilter) : null
 
@@ -86,10 +86,6 @@ export function Hud({
                   key={item.label}
                   className={`chip ${kindFilter === item.id ? 'on' : ''}`}
                   onClick={() => {
-                    if (shopMode) {
-                      if (item.id) onKind(item.id)
-                      return
-                    }
                     onKind(kindFilter === item.id ? null : item.id)
                   }}
                 >

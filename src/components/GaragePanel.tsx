@@ -200,6 +200,8 @@ interface PanelProps {
   onAdd: () => void
   onBuy: (tradeInId?: string) => void
   onSell: () => void
+  onBatchMove: (uids: string[]) => void
+  onBatchDelete: (uids: string[]) => void
   onBack?: () => void
 }
 
@@ -216,6 +218,8 @@ export function GaragePanel({
   onAdd,
   onBuy,
   onSell,
+  onBatchMove,
+  onBatchDelete,
   onBack,
 }: PanelProps) {
   const here = fleet.filter((v) => v.garageId === garage.id)
@@ -228,6 +232,9 @@ export function GaragePanel({
   const trade = !verdict.ok && verdict.needsTradeIn ? verdict : null
   const sell = canSell(ownedIds, garage.id, fleet)
   const [tradeInId, setTradeInId] = useState('')
+  const [batchMode, setBatchMode] = useState(false)
+  const [batch, setBatch] = useState<string[]>([])
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   return (
     <motion.aside
@@ -263,15 +270,9 @@ export function GaragePanel({
             <button
               className="btn danger"
               onClick={() => {
-                if (!sell.ok) {
-                  alert(sell.reason ?? '无法出售')
-                  return
-                }
-                const refund = tradeInRefund(garage.price)
-                if (confirm(`出售 ${garage.name}？将退还 ${formatCash(refund)}。`)) onSell()
+                onSell()
               }}
-              disabled={!sell.ok}
-              title={sell.reason}
+              title={sell.ok ? '出售房产' : '出售前需要迁移其中的车辆'}
             >
               出售
             </button>
@@ -321,6 +322,7 @@ export function GaragePanel({
       {owned && (
       <>
       <div className="floors">
+        {here.length > 0 && <button className={batchMode ? 'on' : ''} onClick={() => { setBatchMode((value) => !value); setBatch([]) }}>{batchMode ? '完成批量编辑' : '批量编辑'}</button>}
         {garage.floors.map((f) => {
           const n = here.filter((v) => v.floor === f.id).length
           return (
@@ -345,8 +347,8 @@ export function GaragePanel({
           return (
             <button
               key={stored.uid}
-              className={`veh ${selectedUid === stored.uid ? 'on' : ''}`}
-              onClick={() => onSelectVehicle(stored.uid)}
+              className={`veh ${(batchMode ? batch.includes(stored.uid) : selectedUid === stored.uid) ? 'on' : ''}`}
+              onClick={() => batchMode ? setBatch((list) => list.includes(stored.uid) ? list.filter((id) => id !== stored.uid) : [...list, stored.uid]) : onSelectVehicle(stored.uid)}
             >
               <VehiclePhoto model={car.id} alt={car.name} />
               <b>
@@ -371,6 +373,8 @@ export function GaragePanel({
           ),
         )}
       </div>
+      {batchMode && <div className="batch-bar"><span className="batch-count">已选 {batch.length} 台</span><div className="batch-actions"><button className="btn ghost" onClick={() => setBatch(visible.map((car) => car.uid))}>全选本层</button><button className="btn danger" disabled={!batch.length} onClick={() => setDeleteOpen(true)}>批量删除</button><button className="btn primary" disabled={!batch.length} onClick={() => onBatchMove(batch)}>批量移动</button></div></div>}
+      {deleteOpen && <div className="modal-bg"><section className="confirm-modal"><div className="kicker">批量删除</div><h2>确认移出车辆？</h2><p>将从车队中永久移出 {batch.length} 台车辆，此操作不会自动恢复。</p><div className="migration-actions"><button className="btn ghost" onClick={() => setDeleteOpen(false)}>取消</button><button className="btn danger" onClick={() => { onBatchDelete(batch); setBatch([]); setDeleteOpen(false) }}>确认移出</button></div></section></div>}
       </>
       )}
     </motion.aside>
@@ -380,13 +384,14 @@ export function GaragePanel({
 interface SheetProps {
   stored: StoredVehicle
   garages: Garage[]
+  fleet: StoredVehicle[]
   onClose: () => void
   onMove: (garageId: string, floor: string) => void
   onDelete: () => void
   onPatch: (patch: Partial<StoredVehicle>) => void
 }
 
-export function VehicleSheet({ stored, garages, onClose, onMove, onDelete, onPatch }: SheetProps) {
+export function VehicleSheet({ stored, garages, fleet, onClose, onMove, onDelete, onPatch }: SheetProps) {
   const car = vehicleById[stored.model]
   if (!car) return null
   const garage = garages.find((g) => g.id === stored.garageId)
@@ -472,6 +477,7 @@ export function VehicleSheet({ stored, garages, onClose, onMove, onDelete, onPat
         <div className="sheet-actions">
           <GaragePicker
             garages={garages}
+            fleet={fleet}
             garageId={stored.garageId}
             floor={stored.floor}
             align="up"
@@ -558,6 +564,7 @@ export function AddVehicle({ garages, fleet, garageId, floor, onClose, onAdd }: 
         <footer>
           <GaragePicker
             garages={garages}
+            fleet={fleet}
             garageId={gid}
             floor={fid}
             align="up"

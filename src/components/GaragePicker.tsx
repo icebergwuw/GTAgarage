@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Garage } from '../types'
+import type { Garage, StoredVehicle } from '../types'
 import { kindFilters, kindLabel } from '../data/garages'
 
 interface Props {
@@ -8,9 +8,11 @@ interface Props {
   floor: string
   onChange: (garageId: string, floor: string) => void
   align?: 'up' | 'down'
+  fleet?: StoredVehicle[]
+  excludeGarageId?: string
 }
 
-export function GaragePicker({ garages, garageId, floor, onChange, align = 'up' }: Props) {
+export function GaragePicker({ garages, garageId, floor, onChange, align = 'up', fleet = [], excludeGarageId }: Props) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
@@ -40,7 +42,7 @@ export function GaragePicker({ garages, garageId, floor, onChange, align = 'up' 
         id: kind.id,
         label: kind.label,
         items: garages.filter((item) => {
-          if (item.kind !== kind.id) return false
+          if (item.kind !== kind.id || item.id === excludeGarageId) return false
           if (!s) return true
           return `${item.name} ${item.district} ${item.address} ${item.type} ${kindLabel[item.kind]}`
             .toLowerCase()
@@ -87,7 +89,7 @@ export function GaragePicker({ garages, garageId, floor, onChange, align = 'up' 
                   >
                     <b>{item.name}</b>
                     <span>
-                      {item.district} · {item.capacity} 车位
+                      {item.district} · 剩余 {Math.max(0, item.capacity - fleet.filter((car) => car.garageId === item.id).length)}/{item.capacity}
                     </span>
                   </button>
                 ))}
