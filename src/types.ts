@@ -62,6 +62,9 @@ export interface Garage {
   y: number
   floors: GarageFloor[]
   blurb: string
+  complex?: string
+  building?: string
+  unit?: string
 }
 
 export interface StoredVehicle {

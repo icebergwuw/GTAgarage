@@ -35,6 +35,18 @@ export const kindLabel = Object.fromEntries(
   kindFilters.filter((item): item is { id: GarageKind; label: string } => item.id !== null).map((item) => [item.id, item.label]),
 ) as Record<GarageKind, string>
 
+export function complexId(garage: Garage) {
+  return garage.complex ?? garage.id
+}
+
+export function complexName(garage: Garage) {
+  return garage.building ?? garage.name
+}
+
+export function complexUnits(id: string): Garage[] {
+  return garages.filter((item) => complexId(item) === id)
+}
+
 const officeFloors: GarageFloor[] = [
   { id: 'l1', name: 'Garage 1', capacity: 20 },
   { id: 'l2', name: 'Garage 2', capacity: 20 },
@@ -70,6 +82,36 @@ function g(
 ): Garage {
   const capacity = row.capacity ?? row.floors.reduce((sum, floor) => sum + floor.capacity, 0)
   return { ...row, capacity }
+}
+
+function tower(
+  complex: string,
+  building: string,
+  district: string,
+  x: number,
+  y: number,
+  units: { id: string; unit: string; price: number; type?: string; blurb?: string }[],
+): Garage[] {
+  return units.map((item) =>
+    g({
+      id: item.id,
+      name: `${building} ${item.unit}`,
+      type: item.type ?? '高端公寓',
+      kind: 'apartment',
+      address: `${building}, ${item.unit}`,
+      district,
+      price: item.price,
+      x,
+      y,
+      floors: apt(10),
+      blurb:
+        item.blurb ??
+        `${building} ${item.unit}，独立 10 车位车库，和同楼其他单位一样各占 1 个公寓名额。`,
+      complex,
+      building,
+      unit: item.unit,
+    }),
+  )
 }
 
 export const garages: Garage[] = [
@@ -862,97 +904,45 @@ export const garages: Garage[] = [
     blurb: 'El Burro Heights 中端公寓，带 6 车位车库。',
   }),
 
-  g({
-    id: 'alta-57',
-    name: '3 Alta St Apt 57',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: '3 Alta Street, Apt 57',
-    district: 'Downtown Los Santos',
-    price: 223000,
-    x: -261.9,
-    y: -970.1,
-    floors: apt(10),
-    blurb: '3 Alta Street 代表性单位 Apt 57，10 车位车库。',
-  }),
-  g({
-    id: 'integrity-28',
-    name: '4 Integrity Way Apt 28',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: '4 Integrity Way, Apt 28',
-    district: 'Downtown Los Santos',
-    price: 476000,
-    x: -47.315,
-    y: -585.977,
-    floors: apt(10),
-    blurb: '4 Integrity Way 代表性单位 Apt 28，10 车位车库。',
-  }),
-  g({
-    id: 'weazel-101',
-    name: 'Weazel Plaza Apt 101',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: 'Weazel Plaza, Apt 101',
-    district: 'Rockford Hills',
-    price: 335000,
-    x: -913.85,
-    y: -455.139,
-    floors: apt(10),
-    blurb: 'Weazel Plaza 代表性单位 Apt 101，10 车位车库。',
-  }),
-  g({
-    id: 'delperro-heights-4',
-    name: 'Del Perro Heights Apt 4',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: 'Del Perro Heights, Apt 4',
-    district: 'Del Perro',
-    price: 468000,
-    x: -1443.094,
-    y: -544.768,
-    floors: apt(10),
-    blurb: 'Del Perro Heights 代表性单位 Apt 4，10 车位车库。',
-  }),
-  g({
-    id: 'richards-2',
-    name: 'Richards Majestic Apt 2',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: 'Richards Majestic, Apt 2',
-    district: 'Rockford Hills',
-    price: 484000,
-    x: -932.834,
-    y: -383.656,
-    floors: apt(10),
-    blurb: 'Richards Majestic 代表性单位 Apt 2，10 车位车库。',
-  }),
-  g({
-    id: 'tinsel',
-    name: 'Tinsel Towers Apt 42',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: 'Tinsel Towers',
-    district: 'Rockford Hills',
-    price: 492000,
-    x: -619.13,
-    y: 37.88,
-    floors: apt(10),
-    blurb: 'Rockford Hills 高层公寓，10 车位，适合放 SUV 和日常座驾。',
-  }),
-  g({
-    id: 'eclipse-towers',
-    name: 'Eclipse Towers Penthouse',
-    type: '高端公寓',
-    kind: 'apartment',
-    address: 'South Mo Milton Drive',
-    district: 'Rockford Hills',
-    price: 1100000,
-    x: -773.68,
-    y: 310.06,
-    floors: apt(10),
-    blurb: 'Rockford Hills 地标公寓，含 10 车位车库与抢劫策划室。Penthouse Suite 3 售价 $1,100,000。',
-  }),
+  ...tower('alta', '3 Alta Street', 'Downtown Los Santos', -261.9, -970.1, [
+    { id: 'alta-57', unit: 'Apt 57', price: 223000 },
+    { id: 'alta-10', unit: 'Apt 10', price: 217000 },
+  ]),
+  ...tower('integrity', '4 Integrity Way', 'Downtown Los Santos', -47.315, -585.977, [
+    { id: 'integrity-28', unit: 'Apt 28', price: 476000, type: '更新内饰', blurb: '4 Integrity Way Apt 28，High Life 更新内饰，10 车位车库与抢劫策划室。' },
+    { id: 'integrity-35', unit: 'Apt 35', price: 247000 },
+    { id: 'integrity-30', unit: 'Apt 30', price: 235000 },
+  ]),
+  ...tower('weazel', 'Weazel Plaza', 'Rockford Hills', -913.85, -455.139, [
+    { id: 'weazel-101', unit: 'Apt 101', price: 335000 },
+    { id: 'weazel-70', unit: 'Apt 70', price: 319000 },
+    { id: 'weazel-26', unit: 'Apt 26', price: 304000 },
+  ]),
+  ...tower('delperro-heights', 'Del Perro Heights', 'Del Perro', -1443.094, -544.768, [
+    { id: 'delperro-heights-4', unit: 'Apt 4', price: 468000, type: '更新内饰', blurb: 'Del Perro Heights Apt 4，High Life 更新内饰，10 车位车库与抢劫策划室。' },
+    { id: 'delperro-heights-20', unit: 'Apt 20', price: 205000 },
+    { id: 'delperro-heights-7', unit: 'Apt 7', price: 200000 },
+  ]),
+  ...tower('richards', 'Richards Majestic', 'Rockford Hills', -932.834, -383.656, [
+    { id: 'richards-2', unit: 'Apt 2', price: 484000, type: '更新内饰', blurb: 'Richards Majestic Apt 2，High Life 更新内饰，10 车位车库与抢劫策划室。' },
+    { id: 'richards-51', unit: 'Apt 51', price: 253000 },
+    { id: 'richards-4', unit: 'Apt 4', price: 241000 },
+  ]),
+  ...tower('tinsel', 'Tinsel Towers', 'Rockford Hills', -619.13, 37.88, [
+    { id: 'tinsel', unit: 'Apt 42', price: 492000, type: '更新内饰', blurb: 'Tinsel Towers Apt 42，High Life 更新内饰，10 车位，适合放 SUV 和日常座驾。' },
+    { id: 'tinsel-29', unit: 'Apt 29', price: 286000 },
+    { id: 'tinsel-45', unit: 'Apt 45', price: 270000 },
+  ]),
+  ...tower('eclipse-towers', 'Eclipse Towers', 'Rockford Hills', -773.68, 310.06, [
+    { id: 'eclipse-towers', unit: 'Penthouse Suite 3', price: 1100000, type: '定制顶层', blurb: 'Eclipse Towers 南向城市景观顶层，可换 8 种内饰，10 车位车库与抢劫策划室。' },
+    { id: 'eclipse-towers-ph1', unit: 'Penthouse Suite 1', price: 985000, type: '定制顶层', blurb: 'Eclipse Towers 南向城市景观顶层，可换 8 种内饰，独立 10 车位车库。' },
+    { id: 'eclipse-towers-ph2', unit: 'Penthouse Suite 2', price: 905000, type: '定制顶层', blurb: 'Eclipse Towers 北向山景顶层，可换 8 种内饰，独立 10 车位车库。' },
+    { id: 'eclipse-towers-apt3', unit: 'Apt 3', price: 500000, type: '更新内饰', blurb: 'Eclipse Towers Apt 3，High Life 更新内饰，10 车位车库与抢劫策划室。' },
+    { id: 'eclipse-towers-apt31', unit: 'Apt 31', price: 400000 },
+    { id: 'eclipse-towers-apt40', unit: 'Apt 40', price: 391000 },
+    { id: 'eclipse-towers-apt5', unit: 'Apt 5', price: 382000 },
+    { id: 'eclipse-towers-apt9', unit: 'Apt 9', price: 373000 },
+  ]),
 
   g({
     id: 'mad-wayne-2113',

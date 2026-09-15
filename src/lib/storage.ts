@@ -1,9 +1,11 @@
 import type { StoredVehicle } from '../types'
 import { seedInventory } from '../data/inventory'
+import { seedOwnedIds } from '../data/ownership'
 import { vehicleById } from '../data/vehicles'
 import { garageById } from '../data/garages'
 
 const KEY = 'gtagarage.fleet.v1'
+const OWNED_KEY = 'gtagarage.owned.v1'
 
 export function loadFleet(): StoredVehicle[] {
   try {
@@ -63,9 +65,41 @@ export function saveFleet(fleet: StoredVehicle[]) {
   localStorage.setItem(KEY, JSON.stringify(fleet))
 }
 
+export function sanitizeOwned(ids: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const id of ids) {
+    if (typeof id !== 'string' || !garageById[id] || seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+  }
+  return out
+}
+
+export function defaultOwned(fleet: StoredVehicle[]): string[] {
+  return sanitizeOwned([...seedOwnedIds, ...fleet.map((item) => item.garageId)])
+}
+
+export function loadOwned(fleet: StoredVehicle[]): string[] {
+  try {
+    const raw = localStorage.getItem(OWNED_KEY)
+    if (!raw) return defaultOwned(fleet)
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return defaultOwned(fleet)
+    return sanitizeOwned([...parsed, ...fleet.map((item) => item.garageId)])
+  } catch {
+    return defaultOwned(fleet)
+  }
+}
+
+export function saveOwned(ids: string[]) {
+  localStorage.setItem(OWNED_KEY, JSON.stringify(sanitizeOwned(ids)))
+}
+
 export function resetFleet(): StoredVehicle[] {
   const next = structuredClone(seedInventory)
   saveFleet(next)
+  saveOwned(defaultOwned(next))
   return next
 }
 
