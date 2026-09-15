@@ -426,7 +426,7 @@ export default function App() {
             setFleet((prev) => [...prev, { uid, model, garageId, floor: nextFloor }])
             setSelectedId(garageId)
             setFloor(nextFloor)
-            setVehicleUid(uid)
+            setVehicleUid(null)
             setAdding(false)
             setShopMode(false)
             window.location.hash = garageId

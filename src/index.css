@@ -494,6 +494,7 @@ img { max-width: 100%; display: block; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  align-content: start;
 }
 .veh {
   text-align: left;
