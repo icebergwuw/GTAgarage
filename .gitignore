@@ -26,3 +26,5 @@ dist-ssr
 .playwright-cli
 public/shot-*.png
 public/shot-contact.png
+
+output/

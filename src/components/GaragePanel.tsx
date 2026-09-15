@@ -1,8 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Garage, StoredVehicle } from '../types'
 import { formatCash, vehicleImage } from '../types'
 import { vehicleById, vehicles } from '../data/vehicles'
+import { canPlaceVehicle } from '../lib/storage'
+import { GaragePicker } from './GaragePicker'
+
+function VehiclePhoto({ model, alt }: { model: string; alt: string }) {
+  return (
+    <img
+      src={vehicleImage(model)}
+      alt={alt}
+      onError={(e) => {
+        const el = e.currentTarget
+        if (el.dataset.fallback) return
+        el.dataset.fallback = '1'
+        el.src = '/car-fallback.svg'
+      }}
+    />
+  )
+}
 
 interface TooltipProps {
   garage: Garage
@@ -14,8 +31,16 @@ interface TooltipProps {
 }
 
 export function GarageTooltip({ garage, count, value, thumbs, x, y }: TooltipProps) {
-  const left = Math.max(16, Math.min(x + 20, (typeof window !== 'undefined' ? window.innerWidth : x) - 296))
-  const top = Math.max(16, Math.min(y - 18, (typeof window !== 'undefined' ? window.innerHeight : y) - 210))
+  const width = 280
+  const height = 196
+  const vw = typeof window !== 'undefined' ? window.innerWidth : x
+  const vh = typeof window !== 'undefined' ? window.innerHeight : y
+  let left = x + 18
+  let top = y + 16
+  if (left + width > vw - 16) left = x - width - 12
+  if (top + height > vh - 16) top = y - height - 12
+  left = Math.max(16, Math.min(left, vw - width - 16))
+  top = Math.max(110, Math.min(top, vh - height - 16))
   return (
     <div className="tooltip" style={{ left, top }}>
       <h3>{garage.name}</h3>
@@ -36,8 +61,8 @@ export function GarageTooltip({ garage, count, value, thumbs, x, y }: TooltipPro
         <b>{formatCash(value)}</b>
       </div>
       <div className="thumbs">
-        {thumbs.map((src) => (
-          <img key={src} src={src} alt="" />
+        {thumbs.map((model, i) => (
+          <VehiclePhoto key={`${model}-${i}`} model={model} alt="" />
         ))}
       </div>
     </div>
@@ -69,6 +94,7 @@ export function GaragePanel({
   const visible = here.filter((v) => v.floor === floor)
   const value = here.reduce((sum, v) => sum + (vehicleById[v.model]?.price ?? 0), 0)
   const currentFloor = garage.floors.find((f) => f.id === floor) ?? garage.floors[0]
+  const garageFull = here.length >= garage.capacity
 
   return (
     <motion.aside
@@ -84,17 +110,16 @@ export function GaragePanel({
       <div className="panel-head">
         <div className="kicker">{garage.type}</div>
         <h2>{garage.name}</h2>
-        <p>
+        <p className="addr">
           {garage.address} · {garage.district}
-          <br />
-          {garage.blurb}
         </p>
+        <p className="blurb">{garage.blurb}</p>
         <div style={{ marginTop: 12, display: 'flex', gap: 18, alignItems: 'center' }}>
           <span style={{ color: 'var(--muted)', fontSize: 12 }}>
             {here.length}/{garage.capacity} · {formatCash(value)}
           </span>
-          <button className="btn primary" onClick={onAdd}>
-            入库
+          <button className="btn primary" onClick={onAdd} disabled={garageFull}>
+            {garageFull ? '已满' : '入库'}
           </button>
         </div>
       </div>
@@ -111,20 +136,22 @@ export function GaragePanel({
       <div className="grid">
         {visible.map((stored) => {
           const car = vehicleById[stored.model]
-          if (!car) return null
+          if (!car) {
+            return (
+              <div key={stored.uid} className="veh">
+                <div className="veh-missing">未知车型</div>
+                <b>{stored.model}</b>
+                <span>数据缺失</span>
+              </div>
+            )
+          }
           return (
             <button
               key={stored.uid}
               className={`veh ${selectedUid === stored.uid ? 'on' : ''}`}
               onClick={() => onSelectVehicle(stored.uid)}
             >
-              <img
-                src={vehicleImage(car.id)}
-                alt={car.name}
-                onError={(e) => {
-                  e.currentTarget.style.opacity = '0.2'
-                }}
-              />
+              <VehiclePhoto model={car.id} alt={car.name} />
               <b>
                 {car.manufacturer} {car.name}
               </b>
@@ -176,13 +203,9 @@ export function VehicleSheet({ stored, garages, onClose, onMove, onDelete, onPat
         ×
       </button>
       <div className="hero">
-        <motion.img
-          key={car.id}
-          src={vehicleImage(car.id)}
-          alt={car.name}
-          initial={{ y: 12, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-        />
+        <motion.div key={car.id} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+          <VehiclePhoto model={car.id} alt={car.name} />
+        </motion.div>
       </div>
       <div className="sheet-body">
         <div className="make">{car.manufacturer}</div>
@@ -248,22 +271,13 @@ export function VehicleSheet({ stored, garages, onClose, onMove, onDelete, onPat
           />
         </label>
         <div className="sheet-actions">
-          <select
-            value={`${stored.garageId}:${stored.floor}`}
-            onChange={(e) => {
-              const [nextGarage, nextFloor] = e.target.value.split(':')
-              onMove(nextGarage, nextFloor)
-            }}
-            style={{ background: '#0c0e12', border: '1px solid var(--line)', padding: 8 }}
-          >
-            {garages.flatMap((g) =>
-              g.floors.map((f) => (
-                <option key={`${g.id}:${f.id}`} value={`${g.id}:${f.id}`}>
-                  {g.name} / {f.name}
-                </option>
-              )),
-            )}
-          </select>
+          <GaragePicker
+            garages={garages}
+            garageId={stored.garageId}
+            floor={stored.floor}
+            align="up"
+            onChange={onMove}
+          />
           <button className="btn danger" onClick={onDelete}>
             移出车库
           </button>
@@ -278,18 +292,25 @@ export function VehicleSheet({ stored, garages, onClose, onMove, onDelete, onPat
 
 interface AddProps {
   garages: Garage[]
+  fleet: StoredVehicle[]
   garageId: string
   floor: string
   onClose: () => void
   onAdd: (model: string, garageId: string, floor: string) => void
 }
 
-export function AddVehicle({ garages, garageId, floor, onClose, onAdd }: AddProps) {
+export function AddVehicle({ garages, fleet, garageId, floor, onClose, onAdd }: AddProps) {
   const [q, setQ] = useState('')
   const [model, setModel] = useState<string | null>(null)
   const [gid, setGid] = useState(garageId)
   const [fid, setFid] = useState(floor)
-  const garage = garages.find((g) => g.id === gid)
+
+  useEffect(() => {
+    setGid(garageId)
+    setFid(floor)
+  }, [garageId, floor])
+
+  const place = canPlaceVehicle(fleet, gid, fid)
   const list = vehicles.filter((v) => {
     const s = q.trim().toLowerCase()
     if (!s) return true
@@ -325,7 +346,7 @@ export function AddVehicle({ garages, garageId, floor, onClose, onAdd }: AddProp
               className={model === car.id ? 'on' : ''}
               onClick={() => setModel(car.id)}
             >
-              <img src={vehicleImage(car.id)} alt={car.name} />
+              <VehiclePhoto model={car.id} alt={car.name} />
               <b>
                 {car.manufacturer} {car.name}
               </b>
@@ -336,33 +357,22 @@ export function AddVehicle({ garages, garageId, floor, onClose, onAdd }: AddProp
           ))}
         </div>
         <footer>
-          <select
-            value={gid}
-            onChange={(e) => {
-              setGid(e.target.value)
-              const g = garages.find((x) => x.id === e.target.value)
-              if (g) setFid(g.floors[0].id)
+          <GaragePicker
+            garages={garages}
+            garageId={gid}
+            floor={fid}
+            align="up"
+            onChange={(nextGarage, nextFloor) => {
+              setGid(nextGarage)
+              setFid(nextFloor)
             }}
-          >
-            {garages.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-          <select value={fid} onChange={(e) => setFid(e.target.value)}>
-            {garage?.floors.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
+          />
           <button
             className="btn primary"
-            disabled={!model}
-            onClick={() => model && onAdd(model, gid, fid)}
+            disabled={!model || !place.ok}
+            onClick={() => model && place.ok && onAdd(model, gid, fid)}
           >
-            放入车库
+            {place.ok ? '放入车库' : place.reason}
           </button>
         </footer>
       </motion.div>

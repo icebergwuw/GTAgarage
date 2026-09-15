@@ -15,6 +15,20 @@ export type VehicleClass =
   | 'Compacts'
   | 'Vans'
 
+export type GarageKind =
+  | 'apartment'
+  | 'garage'
+  | 'office'
+  | 'nightclub'
+  | 'agency'
+  | 'autoshop'
+  | 'clubhouse'
+  | 'hangar'
+  | 'arcade'
+  | 'mansion'
+  | 'bail'
+  | 'special'
+
 export interface Vehicle {
   id: string
   manufacturer: string
@@ -39,6 +53,7 @@ export interface Garage {
   id: string
   name: string
   type: string
+  kind: GarageKind
   address: string
   district: string
   capacity: number

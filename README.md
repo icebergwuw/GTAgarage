@@ -1,11 +1,14 @@
 # GTA Garage
 
-用官方 GTA V 暂停菜单地图管理 GTA Online 车库库存。
+用官方 GTA V 暂停菜单地图管理 GTA Online 全部可存放个人载具的房产。
 
 - 背景是 Rockstar Social Club 的 San Andreas 地图瓦片
+- 覆盖公寓、独立车库、办公室、夜总会、事务所、改装店、会所、机库、街机厅、豪宅、保释所和特殊车库
 - 悬停车库看容量、估值和车头图
 - 点击进入该车库的真实车辆（FiveM / GTA Wiki 图和资料）
 - 本地可增删改、跨车库移动，数据存在浏览器里
+
+不含地堡、设施、货物仓、载具仓库、游艇、潜艇、拆车场、洗车店和 McKenzie 机库（那些不是常规个人载具库存）。
 
 ```bash
 npm install

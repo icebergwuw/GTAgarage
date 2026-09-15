@@ -30,6 +30,6 @@ export const TILE_URL = 'https://s.rsg.sc/sc/images/games/GTAV/map/render/{z}/{x
 export const ERROR_TILE = '/ocean.jpg'
 
 export const MAP_BOUNDS: L.LatLngBoundsExpression = [
-  [-4000, -5500],
-  [8000, 6000],
+  [-4300, -4000],
+  [7700, 4500],
 ]

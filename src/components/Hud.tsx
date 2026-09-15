@@ -1,14 +1,15 @@
-import { formatCash } from '../types'
-import { classOrder } from '../data/vehicles'
+import { formatCash, type GarageKind } from '../types'
+import { kindFilters } from '../data/garages'
 
 interface Props {
   query: string
   onQuery: (v: string) => void
-  classFilter: string | null
-  onClass: (v: string | null) => void
+  kindFilter: GarageKind | null
+  onKind: (v: GarageKind | null) => void
   garageCount: number
   carCount: number
   value: number
+  panelOpen: boolean
   onAdd: () => void
   onReset: () => void
   onExport: () => void
@@ -17,11 +18,12 @@ interface Props {
 export function Hud({
   query,
   onQuery,
-  classFilter,
-  onClass,
+  kindFilter,
+  onKind,
   garageCount,
   carCount,
   value,
+  panelOpen,
   onAdd,
   onReset,
   onExport,
@@ -41,49 +43,52 @@ export function Hud({
           <input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="搜索车库 / 车型 / 厂商"
+            placeholder="搜索车库 / 地址 / 车型 / 厂商"
           />
         </div>
-        <div className="stats">
-          <div>
-            <em>车库</em>
-            <b>{garageCount}</b>
+        {!panelOpen && (
+          <div className="stats">
+            <div>
+              <em>车库</em>
+              <b>{garageCount}</b>
+            </div>
+            <div>
+              <em>载具</em>
+              <b>{carCount}</b>
+            </div>
+            <div>
+              <em>估值</em>
+              <b>{formatCash(value)}</b>
+            </div>
           </div>
-          <div>
-            <em>载具</em>
-            <b>{carCount}</b>
-          </div>
-          <div>
-            <em>估值</em>
-            <b>{formatCash(value)}</b>
-          </div>
-        </div>
+        )}
       </header>
-      <div className="filters">
-        <button className={`chip ${!classFilter ? 'on' : ''}`} onClick={() => onClass(null)}>
-          All
-        </button>
-        {classOrder.slice(0, 10).map((c) => (
-          <button
-            key={c}
-            className={`chip ${classFilter === c ? 'on' : ''}`}
-            onClick={() => onClass(classFilter === c ? null : c)}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-      <div className="actions">
-        <button className="btn primary" onClick={onAdd}>
-          添加车辆
-        </button>
-        <button className="btn ghost" onClick={onExport}>
-          导出
-        </button>
-        <button className="btn danger" onClick={onReset}>
-          重置示例
-        </button>
-      </div>
+      {!panelOpen && (
+        <>
+          <div className="filters">
+            {kindFilters.map((item) => (
+              <button
+                key={item.label}
+                className={`chip ${kindFilter === item.id ? 'on' : ''}`}
+                onClick={() => onKind(kindFilter === item.id ? null : item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="actions">
+            <button className="btn primary" onClick={onAdd}>
+              添加车辆
+            </button>
+            <button className="btn ghost" onClick={onExport}>
+              导出
+            </button>
+            <button className="btn danger" onClick={onReset}>
+              重置示例
+            </button>
+          </div>
+        </>
+      )}
       <div className="hint">悬停车库看概览 · 点击进入库存</div>
     </>
   )
