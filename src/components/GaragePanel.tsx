@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Garage, StoredVehicle } from '../types'
 import { formatCash, vehicleImage } from '../types'
@@ -202,6 +202,7 @@ interface PanelProps {
   onSell: () => void
   onBatchMove: (uids: string[]) => void
   onBatchDelete: (uids: string[]) => void
+  focusUid?: string | null
   onBack?: () => void
 }
 
@@ -220,6 +221,7 @@ export function GaragePanel({
   onSell,
   onBatchMove,
   onBatchDelete,
+  focusUid,
   onBack,
 }: PanelProps) {
   const here = fleet.filter((v) => v.garageId === garage.id)
@@ -235,6 +237,17 @@ export function GaragePanel({
   const [batchMode, setBatchMode] = useState(false)
   const [batch, setBatch] = useState<string[]>([])
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const cardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  useEffect(() => {
+    if (!focusUid) return
+    const card = cardRefs.current[focusUid]
+    if (!card) return
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    card.classList.add('is-new')
+    const timer = window.setTimeout(() => card.classList.remove('is-new'), 1600)
+    return () => window.clearTimeout(timer)
+  }, [focusUid, floor, visible.length])
 
   return (
     <motion.aside
@@ -347,6 +360,7 @@ export function GaragePanel({
           return (
             <button
               key={stored.uid}
+              ref={(node) => { cardRefs.current[stored.uid] = node }}
               className={`veh ${(batchMode ? batch.includes(stored.uid) : selectedUid === stored.uid) ? 'on' : ''}`}
               onClick={() => batchMode ? setBatch((list) => list.includes(stored.uid) ? list.filter((id) => id !== stored.uid) : [...list, stored.uid]) : onSelectVehicle(stored.uid)}
             >

@@ -47,6 +47,7 @@ export default function App() {
   })
   const [vehicleUid, setVehicleUid] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [focusVehicleUid, setFocusVehicleUid] = useState<string | null>(null)
   const [sellRequest, setSellRequest] = useState<string | null>(null)
   const [migrationTarget, setMigrationTarget] = useState('')
   const [sellConfirm, setSellConfirm] = useState(false)
@@ -371,6 +372,7 @@ export default function App() {
             onSell={() => handleSell(selectedGarage.id)}
             onBatchMove={(uids) => { setBatchMoveUids(uids); setBatchMoveTarget('') }}
             onBatchDelete={(uids) => setFleet((prev) => prev.filter((car) => !uids.includes(car.uid)))}
+            focusUid={focusVehicleUid}
             onBack={selectedSiteUnits.length > 1 ? () => {
               setSelectedId(null)
               setVehicleUid(null)
@@ -426,6 +428,7 @@ export default function App() {
             setFleet((prev) => [...prev, { uid, model, garageId, floor: nextFloor }])
             setSelectedId(garageId)
             setFloor(nextFloor)
+            setFocusVehicleUid(uid)
             setVehicleUid(null)
             setAdding(false)
             setShopMode(false)

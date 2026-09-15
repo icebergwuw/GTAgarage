@@ -504,6 +504,11 @@ img { max-width: 100%; display: block; }
   min-height: 176px;
 }
 .veh:hover, .veh.on { border-color: var(--accent); background: var(--accent-soft); }
+.veh.is-new { animation: vehicle-added 1.6s ease-out; }
+@keyframes vehicle-added {
+  0%, 100% { border-color: transparent; background: transparent; box-shadow: none; }
+  18%, 55% { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px rgba(228,193,90,.2), 0 0 24px rgba(228,193,90,.28); }
+}
 .veh img {
   width: 100%;
   height: 104px;
