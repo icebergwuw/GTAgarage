@@ -3,10 +3,12 @@ import { AnimatePresence } from 'framer-motion'
 import { MapCanvas } from './components/MapCanvas'
 import { Hud } from './components/Hud'
 import { AddVehicle, BuildingPanel, GaragePanel, GarageTooltip, VehicleSheet } from './components/GaragePanel'
+import { DexPanel } from './components/DexPanel'
 import { complexId, complexUnits, garages } from './data/garages'
 import { buyProperty, sellProperty } from './data/ownership'
 import type { GarageKind } from './types'
-import { vehicleById } from './data/vehicles'
+import { vehicleById, vehicles } from './data/vehicles'
+import { collectionProgress } from './lib/collection'
 import { canPlaceVehicle, exportFleet, loadFleet, loadOwned, resetFleet, saveFleet, saveOwned } from './lib/storage'
 import type { StoredVehicle } from './types'
 
@@ -54,6 +56,8 @@ export default function App() {
   const [batchMoveUids, setBatchMoveUids] = useState<string[]>([])
   const [batchMoveTarget, setBatchMoveTarget] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
+  const [dexOpen, setDexOpen] = useState(false)
+  const [dexModel, setDexModel] = useState<string | null>(null)
 
   const ownedSet = useMemo(() => new Set(ownedIds), [ownedIds])
   const ownedGarages = useMemo(() => garages.filter((item) => ownedSet.has(item.id)), [ownedSet])
@@ -73,6 +77,22 @@ export default function App() {
     setHovered(null)
     if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search)
   }, [])
+
+  const closeDex = useCallback(() => {
+    setDexOpen(false)
+    setDexModel(null)
+  }, [])
+
+  const openDex = useCallback(() => {
+    setDexOpen(true)
+    setDexModel(null)
+    setAdding(false)
+    setVehicleUid(null)
+    setSellRequest(null)
+    setSellConfirm(false)
+    setBatchMoveUids([])
+    closeGarage()
+  }, [closeGarage])
 
   const openGarage = useCallback((id: string) => {
     const g = garages.find((x) => x.id === id)
@@ -115,7 +135,9 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (adding) setAdding(false)
+      if (dexModel) setDexModel(null)
+      else if (dexOpen) closeDex()
+      else if (adding) setAdding(false)
       else if (vehicleUid) setVehicleUid(null)
       else if (selectedId && siteId && complexUnits(siteId).length > 1) {
         setSelectedId(null)
@@ -125,7 +147,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [adding, vehicleUid, selectedId, siteId, closeGarage])
+  }, [adding, vehicleUid, selectedId, siteId, closeGarage, dexOpen, dexModel, closeDex])
 
   const selectedGarage = garages.find((g) => g.id === selectedId) ?? null
   const selectedOwned = selectedId ? ownedSet.has(selectedId) : false
@@ -153,6 +175,7 @@ export default function App() {
   }, [shopMode, ownedGarages, kindFilter, query, fleet])
 
   const value = fleet.reduce((sum, v) => sum + (vehicleById[v.model]?.price ?? 0), 0)
+  const dexProgress = collectionProgress(fleet, vehicles)
   const hoverUnits = hovered ? complexUnits(hovered.id) : []
   const hoverOwned = hoverUnits.filter((item) => ownedSet.has(item.id))
   const hoverCars = fleet.filter((v) => hoverOwned.some((item) => item.id === v.garageId))
@@ -315,7 +338,14 @@ export default function App() {
         carCount={fleet.length}
         value={value}
         panelOpen={!!selectedGarage || !!siteId}
-        onAdd={() => setAdding(true)}
+        dexOpen={dexOpen}
+        dexCollected={dexProgress.collected}
+        dexTotal={dexProgress.total}
+        onDex={() => (dexOpen ? closeDex() : openDex())}
+        onAdd={() => {
+          if (dexOpen) return
+          setAdding(true)
+        }}
         canAdd={ownedGarages.length > 0}
         onShop={() => (shopMode ? exitShop() : enterShop())}
         onReset={() => {
@@ -324,12 +354,13 @@ export default function App() {
             setFleet(next)
             setOwnedIds(loadOwned(next))
             setShopMode(false)
+            closeDex()
             closeGarage()
           }
         }}
         onExport={() => exportFleet(fleet)}
       />
-      {hoverUnits.length > 0 && !selectedGarage && !siteId && (
+      {hoverUnits.length > 0 && !selectedGarage && !siteId && !dexOpen && (
         <GarageTooltip
           garage={hoverOwned[0] ?? hoverUnits[0]}
           units={hoverUnits}
@@ -411,7 +442,33 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
-      {adding && ownedGarages.length > 0 && (
+      {dexOpen && (
+        <DexPanel
+          fleet={fleet}
+          ownedGarages={ownedGarages}
+          selectedModel={dexModel}
+          onSelectModel={setDexModel}
+          onClose={closeDex}
+          onJump={(uid, garageId, nextFloor) => {
+            const car = fleet.find((item) => item.uid === uid)
+            closeDex()
+            if (!ownedSet.has(garageId)) return
+            openGarage(garageId)
+            setFloor(nextFloor)
+            if (car) setFocusVehicleUid(uid)
+          }}
+          onAdd={(model, garageId, nextFloor) => {
+            const check = canPlaceVehicle(fleet, garageId, nextFloor)
+            if (!check.ok) {
+              setNotice(check.reason ?? '无法入库')
+              return
+            }
+            const uid = `sv-${Date.now()}`
+            setFleet((prev) => [...prev, { uid, model, garageId, floor: nextFloor }])
+          }}
+        />
+      )}
+      {adding && !dexOpen && ownedGarages.length > 0 && (
         <AddVehicle
           garages={ownedGarages}
           fleet={fleet}

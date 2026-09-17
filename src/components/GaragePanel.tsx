@@ -1,27 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Garage, StoredVehicle } from '../types'
-import { formatCash, vehicleImage } from '../types'
+import { formatCash } from '../types'
 import { complexName } from '../data/garages'
 import { vehicleById, vehicles } from '../data/vehicles'
 import { canBuy, canSell, slotGroupFor, tradeInRefund, usageForKind } from '../data/ownership'
 import { canPlaceVehicle } from '../lib/storage'
 import { GaragePicker } from './GaragePicker'
-
-function VehiclePhoto({ model, alt }: { model: string; alt: string }) {
-  return (
-    <img
-      src={vehicleImage(model)}
-      alt={alt}
-      onError={(e) => {
-        const el = e.currentTarget
-        if (el.dataset.fallback) return
-        el.dataset.fallback = '1'
-        el.src = '/car-fallback.svg'
-      }}
-    />
-  )
-}
+import { VehiclePhoto } from './VehiclePhoto'
 
 interface TooltipProps {
   garage: Garage

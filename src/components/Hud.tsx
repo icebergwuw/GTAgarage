@@ -13,6 +13,10 @@ interface Props {
   carCount: number
   value: number
   panelOpen: boolean
+  dexOpen: boolean
+  dexCollected: number
+  dexTotal: number
+  onDex: () => void
   onAdd: () => void
   canAdd: boolean
   onShop: () => void
@@ -31,6 +35,10 @@ export function Hud({
   carCount,
   value,
   panelOpen,
+  dexOpen,
+  dexCollected,
+  dexTotal,
+  onDex,
   onAdd,
   canAdd,
   onShop,
@@ -76,7 +84,7 @@ export function Hud({
           </div>
         )}
       </header>
-      {!panelOpen && (
+      {!panelOpen && !dexOpen && (
         <>
           <div className={`filters ${shopMode ? 'is-shop' : ''}`}>
             {chips.map((item) => {
@@ -102,6 +110,12 @@ export function Hud({
           <div className="actions">
             <button className={`btn ${shopMode ? 'primary' : 'ghost'}`} onClick={onShop}>
               {shopMode ? '我的车库' : '购买房产'}
+            </button>
+            <button className={`btn ${dexOpen ? 'primary' : 'ghost'}`} onClick={onDex}>
+              图鉴
+              <em>
+                {dexCollected}/{dexTotal}
+              </em>
             </button>
             <button className="btn primary" onClick={onAdd} disabled={!canAdd}>
               添加车辆
