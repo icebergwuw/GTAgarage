@@ -973,6 +973,7 @@ img { max-width: 100%; display: block; }
   line-height: 1.55;
   font-size: 13px;
 }
+.dex-sheet a { color: var(--accent); }
 .dex-lots {
   display: flex;
   flex-direction: column;

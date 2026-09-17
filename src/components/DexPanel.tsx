@@ -188,8 +188,29 @@ export function DexPanel({
                   <em>Price</em>
                   {formatCash(selected.price)}
                 </div>
+                <div>
+                  <em>Top speed</em>
+                  {selected.topSpeed} mph
+                </div>
+                <div>
+                  <em>Seats</em>
+                  {selected.seats}
+                </div>
+                <div>
+                  <em>Source</em>
+                  {selected.source}
+                </div>
+                <div>
+                  <em>Real counterpart</em>
+                  {selected.realLife}
+                </div>
               </div>
               <p>{selected.description}</p>
+              <p>
+                <a href={selected.wiki} target="_blank" rel="noreferrer">
+                  GTA Wiki →
+                </a>
+              </p>
               {copies.length > 0 && (
                 <div className="dex-lots">
                   <em>停放位置 · {copies.length} 台</em>
