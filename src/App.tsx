@@ -7,8 +7,9 @@ import { DexPanel } from './components/DexPanel'
 import { complexId, complexUnits, garages } from './data/garages'
 import { buyProperty, sellProperty } from './data/ownership'
 import type { GarageKind } from './types'
-import { vehicleById, vehicles } from './data/vehicles'
-import { collectionProgress } from './lib/collection'
+import { classOrder, vehicleById, vehicles } from './data/vehicles'
+import { collectionProgress, newUnlocks, type Achievement } from './lib/collection'
+import { AchievementToast } from './components/AchievementToast'
 import { canPlaceVehicle, exportFleet, loadFleet, loadOwned, resetFleet, saveFleet, saveOwned } from './lib/storage'
 import type { StoredVehicle } from './types'
 
@@ -58,6 +59,8 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null)
   const [dexOpen, setDexOpen] = useState(false)
   const [dexModel, setDexModel] = useState<string | null>(null)
+  const [achieveQueue, setAchieveQueue] = useState<Achievement[]>([])
+  const [achieve, setAchieve] = useState<Achievement | null>(null)
 
   const ownedSet = useMemo(() => new Set(ownedIds), [ownedIds])
   const ownedGarages = useMemo(() => garages.filter((item) => ownedSet.has(item.id)), [ownedSet])
@@ -69,6 +72,18 @@ export default function App() {
   useEffect(() => {
     saveOwned(ownedIds)
   }, [ownedIds])
+
+  useEffect(() => {
+    if (achieve || !achieveQueue.length) return
+    setAchieve(achieveQueue[0])
+    setAchieveQueue((queue) => queue.slice(1))
+  }, [achieve, achieveQueue])
+
+  useEffect(() => {
+    if (!achieve) return
+    const timer = window.setTimeout(() => setAchieve(null), 4500)
+    return () => window.clearTimeout(timer)
+  }, [achieve])
 
   const closeGarage = useCallback(() => {
     setSelectedId(null)
@@ -82,6 +97,20 @@ export default function App() {
     setDexOpen(false)
     setDexModel(null)
   }, [])
+
+  const commitAdd = useCallback((model: string, garageId: string, nextFloor: string) => {
+    const check = canPlaceVehicle(fleet, garageId, nextFloor)
+    if (!check.ok) {
+      setNotice(check.reason ?? '无法入库')
+      return null
+    }
+    const uid = `sv-${Date.now()}`
+    const next = [...fleet, { uid, model, garageId, floor: nextFloor }]
+    const unlocked = newUnlocks(fleet, next, vehicles, classOrder)
+    setFleet(next)
+    if (unlocked.length) setAchieveQueue((queue) => [...queue, ...unlocked])
+    return uid
+  }, [fleet])
 
   const openDex = useCallback(() => {
     setDexOpen(true)
@@ -458,13 +487,7 @@ export default function App() {
             if (car) setFocusVehicleUid(uid)
           }}
           onAdd={(model, garageId, nextFloor) => {
-            const check = canPlaceVehicle(fleet, garageId, nextFloor)
-            if (!check.ok) {
-              setNotice(check.reason ?? '无法入库')
-              return
-            }
-            const uid = `sv-${Date.now()}`
-            setFleet((prev) => [...prev, { uid, model, garageId, floor: nextFloor }])
+            commitAdd(model, garageId, nextFloor)
           }}
         />
       )}
@@ -476,13 +499,8 @@ export default function App() {
           floor={floor}
           onClose={() => setAdding(false)}
           onAdd={(model, garageId, nextFloor) => {
-            const check = canPlaceVehicle(fleet, garageId, nextFloor)
-            if (!check.ok) {
-              setNotice(check.reason ?? '无法入库')
-              return
-            }
-            const uid = `sv-${Date.now()}`
-            setFleet((prev) => [...prev, { uid, model, garageId, floor: nextFloor }])
+            const uid = commitAdd(model, garageId, nextFloor)
+            if (!uid) return
             setSelectedId(garageId)
             setFloor(nextFloor)
             setFocusVehicleUid(uid)
@@ -522,6 +540,16 @@ export default function App() {
       )}
       {batchMoveUids.length > 0 && <div className="modal-bg"><section className="confirm-modal batch-move-modal"><div className="kicker">批量移动</div><h2>选择目标车库</h2><p>将移动 {batchMoveUids.length} 台车辆，系统会自动按楼层剩余容量分配。</p><label className="migration-picker">目标车库<select value={batchMoveTarget} onChange={(event) => setBatchMoveTarget(event.target.value)}><option value="">选择目标车库</option>{ownedGarages.map((garage) => <option key={garage.id} value={garage.id}>{garage.name} · 剩余 {Math.max(0, garage.capacity - fleet.filter((car) => car.garageId === garage.id && !batchMoveUids.includes(car.uid)).length)}/{garage.capacity}</option>)}</select></label>{batchMoveTarget && <p className="migration-note">{garages.find((garage) => garage.id === batchMoveTarget)?.floors.map((floor) => `${floor.name} ${fleet.filter((car) => car.garageId === batchMoveTarget && car.floor === floor.id && !batchMoveUids.includes(car.uid)).length}/${floor.capacity}`).join(' · ')}</p>}<div className="migration-actions"><button className="btn ghost" onClick={() => setBatchMoveUids([])}>取消</button><button className="btn primary" disabled={!batchMoveTarget} onClick={confirmBatchMove}>确认移动</button></div></section></div>}
       {notice && <div className="toast" role="status" onClick={() => setNotice(null)}>{notice}</div>}
+      <AnimatePresence>
+        {achieve && (
+          <AchievementToast
+            key={achieve.key}
+            title={achieve.title}
+            detail={achieve.detail}
+            onClose={() => setAchieve(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

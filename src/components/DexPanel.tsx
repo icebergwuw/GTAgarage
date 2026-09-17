@@ -73,6 +73,15 @@ export function DexPanel({
     })
   }, [classFilter, status, query, owned])
 
+  const sections = useMemo(
+    () =>
+      classes
+        .filter((row) => classFilter === 'all' || row.class === classFilter)
+        .map((row) => ({ ...row, cars: list.filter((car) => car.class === row.class) }))
+        .filter((row) => row.cars.length > 0),
+    [classes, list, classFilter],
+  )
+
   return (
     <div
       className="dex-bg"
@@ -92,6 +101,7 @@ export function DexPanel({
             <div className="kicker">COLLECTION</div>
             <h3>
               图鉴 {progress.collected}/{progress.total}
+              {progress.collected === progress.total && progress.total > 0 && <i className="dex-medal" aria-label="图鉴已完成" />}
             </h3>
           </div>
           <button className="close" onClick={onClose} aria-label="关闭图鉴">
@@ -108,6 +118,7 @@ export function DexPanel({
             <em>
               {progress.collected}/{progress.total}
             </em>
+            {progress.collected === progress.total && progress.total > 0 && <i className="dex-medal" aria-hidden />}
           </button>
           {classes.map((row) => (
             <button
@@ -119,6 +130,7 @@ export function DexPanel({
               <em>
                 {row.collected}/{row.total}
               </em>
+              {row.collected === row.total && <i className="dex-medal" aria-label={`${row.class}已完成`} />}
             </button>
           ))}
         </div>
@@ -144,27 +156,40 @@ export function DexPanel({
           />
         </div>
 
-        <div className="dex-grid">
-          {list.map((car) => {
-            const count = counts.get(car.id) ?? 0
-            const collected = count > 0
-            return (
-              <button
-                key={car.id}
-                className={`${selectedModel === car.id ? 'on' : ''} ${collected ? '' : 'is-missing'}`}
-                onClick={() => onSelectModel(car.id)}
-              >
-                <VehiclePhoto model={car.id} alt={car.name} />
-                {collected ? count > 1 && <i className="dex-mark">×{count}</i> : <i className="dex-mark is-miss">未收集</i>}
-                <b>
-                  {car.manufacturer} {car.name}
-                </b>
+        <div className="dex-body">
+          {sections.map((section) => (
+            <section key={section.class} className="dex-section">
+              <header className="dex-section-head">
+                <h4>{section.class}</h4>
                 <span>
-                  {car.class} · {formatCash(car.price)}
+                  {section.collected}/{section.total}
                 </span>
-              </button>
-            )
-          })}
+                {section.collected === section.total && <i className="dex-medal" aria-label={`${section.class}已完成`} />}
+              </header>
+              <div className="dex-grid">
+                {section.cars.map((car) => {
+                  const count = counts.get(car.id) ?? 0
+                  const collected = count > 0
+                  return (
+                    <button
+                      key={car.id}
+                      className={`${selectedModel === car.id ? 'on' : ''} ${collected ? '' : 'is-missing'}`}
+                      onClick={() => onSelectModel(car.id)}
+                    >
+                      <VehiclePhoto model={car.id} alt={car.name} />
+                      {collected ? count > 1 && <i className="dex-mark">×{count}</i> : <i className="dex-mark is-miss">未收集</i>}
+                      <b>
+                        {car.manufacturer} {car.name}
+                      </b>
+                      <span>
+                        {car.class} · {formatCash(car.price)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          ))}
           {list.length === 0 && <p className="dex-empty">{emptyCopy(classFilter, status, query)}</p>}
         </div>
 
