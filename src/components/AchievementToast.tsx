@@ -17,7 +17,6 @@ export function AchievementToast({ title, detail, onClose }: Props) {
       exit={{ x: 28, opacity: 0 }}
       role="status"
     >
-      <i className="dex-medal is-lg" aria-hidden />
       <span>
         <b>{title}</b>
         <em>{detail}</em>

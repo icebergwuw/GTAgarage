@@ -788,13 +788,12 @@ img { max-width: 100%; display: block; }
   bottom: 96px;
   z-index: 1210;
   width: min(340px, calc(100vw - 32px));
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  display: block;
+  padding: 12px 16px 12px 14px;
   text-align: left;
   background: var(--glass-2);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 .achieve b {
@@ -904,10 +903,11 @@ img { max-width: 100%; display: block; }
 }
 .dex-section + .dex-section { margin-top: 18px; }
 .dex-section-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 2px 2px 8px;
+  display: grid;
+  grid-template-columns: max-content auto;
+  column-gap: 12px;
+  align-items: baseline;
+  margin: 2px 2px 10px;
 }
 .dex-section-head h4 {
   margin: 0;
@@ -919,28 +919,22 @@ img { max-width: 100%; display: block; }
   color: var(--muted);
   font-size: 12px;
 }
-.dex-head h3 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.dex-section-head.is-done span { color: var(--accent); }
+.dex-title {
+  grid-column: 1 / -1;
+  margin: 3px 0 0;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.18em;
 }
-.dex-classes .chip {
-  display: inline-flex;
-  align-items: center;
+.dex-head .dex-title { margin-top: 0; margin-bottom: 8px; }
+.dex-classes .chip.is-done em {
+  color: var(--accent);
+  opacity: 1;
 }
-.dex-medal {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-  background: radial-gradient(circle at 32% 28%, #fff3c2, var(--accent) 46%, #8a6a1c);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 10px rgba(228, 193, 90, 0.35);
-}
-.dex-medal.is-lg {
-  width: 42px;
-  height: 42px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 16px rgba(228, 193, 90, 0.4);
+.dex-classes .chip.on.is-done em {
+  color: #111;
+  opacity: 0.72;
 }
 .dex-grid {
   display: grid;

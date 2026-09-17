@@ -4,7 +4,7 @@ import type { Garage, StoredVehicle, VehicleClass } from '../types'
 import { formatCash } from '../types'
 import { garageById } from '../data/garages'
 import { classOrder, vehicleById, vehicles } from '../data/vehicles'
-import { classProgress, collectedModels, collectionProgress, copiesOf } from '../lib/collection'
+import { catalogAchievement, classAchievements, classProgress, collectedModels, collectionProgress, copiesOf } from '../lib/collection'
 import { canPlaceVehicle } from '../lib/storage'
 import { GaragePicker } from './GaragePicker'
 import { VehiclePhoto } from './VehiclePhoto'
@@ -101,8 +101,10 @@ export function DexPanel({
             <div className="kicker">COLLECTION</div>
             <h3>
               图鉴 {progress.collected}/{progress.total}
-              {progress.collected === progress.total && progress.total > 0 && <i className="dex-medal" aria-label="图鉴已完成" />}
             </h3>
+            {progress.collected === progress.total && progress.total > 0 && (
+              <div className="dex-title">{catalogAchievement}</div>
+            )}
           </div>
           <button className="close" onClick={onClose} aria-label="关闭图鉴">
             ×
@@ -113,24 +115,25 @@ export function DexPanel({
         </header>
 
         <div className="dex-classes">
-          <button className={`chip ${classFilter === 'all' ? 'on' : ''}`} onClick={() => setClassFilter('all')}>
+          <button
+            className={`chip ${classFilter === 'all' ? 'on' : ''} ${progress.collected === progress.total && progress.total > 0 ? 'is-done' : ''}`}
+            onClick={() => setClassFilter('all')}
+          >
             全部
             <em>
               {progress.collected}/{progress.total}
             </em>
-            {progress.collected === progress.total && progress.total > 0 && <i className="dex-medal" aria-hidden />}
           </button>
           {classes.map((row) => (
             <button
               key={row.class}
-              className={`chip ${classFilter === row.class ? 'on' : ''}`}
+              className={`chip ${classFilter === row.class ? 'on' : ''} ${row.collected === row.total ? 'is-done' : ''}`}
               onClick={() => setClassFilter(row.class)}
             >
               {row.class}
               <em>
                 {row.collected}/{row.total}
               </em>
-              {row.collected === row.total && <i className="dex-medal" aria-label={`${row.class}已完成`} />}
             </button>
           ))}
         </div>
@@ -159,12 +162,14 @@ export function DexPanel({
         <div className="dex-body">
           {sections.map((section) => (
             <section key={section.class} className="dex-section">
-              <header className="dex-section-head">
+              <header className={`dex-section-head ${section.collected === section.total ? 'is-done' : ''}`}>
                 <h4>{section.class}</h4>
                 <span>
                   {section.collected}/{section.total}
                 </span>
-                {section.collected === section.total && <i className="dex-medal" aria-label={`${section.class}已完成`} />}
+                {section.collected === section.total && (
+                  <p className="dex-title">{classAchievements[section.class] ?? '收集完成'}</p>
+                )}
               </header>
               <div className="dex-grid">
                 {section.cars.map((car) => {
