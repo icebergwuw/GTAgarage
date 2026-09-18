@@ -81,6 +81,14 @@ export function vehicleImage(model: string) {
   return `https://docs.fivem.net/vehicles/${model}.webp`
 }
 
+export function localVehicleImage(model: string) {
+  return `${import.meta.env.BASE_URL}vehicles/${model}.webp`
+}
+
+export function vehicleFallbackImage() {
+  return `${import.meta.env.BASE_URL}car-fallback.svg`
+}
+
 export function formatCash(n: number) {
   return `$${n.toLocaleString('en-US')}`
 }
