@@ -1,4 +1,4 @@
-import { localVehicleImage, vehicleFallbackImage, vehicleImage } from '../types'
+import { hasLocalVehicleImage, localVehicleImage, vehicleFallbackImage, vehicleImage } from '../types'
 
 export function VehiclePhoto({ model, alt }: { model: string; alt: string }) {
   return (
@@ -7,14 +7,16 @@ export function VehiclePhoto({ model, alt }: { model: string; alt: string }) {
       alt={alt}
       onError={(e) => {
         const el = e.currentTarget
-        if (el.dataset.fallback === 'local') {
-          el.dataset.fallback = 'done'
-          el.src = vehicleFallbackImage()
+        const step = el.dataset.fallback ?? '0'
+        if (step === '0') {
+          el.dataset.fallback = '1'
+          el.src = hasLocalVehicleImage(model) ? vehicleFallbackImage() : localVehicleImage(model)
           return
         }
-        if (el.dataset.fallback === 'done') return
-        el.dataset.fallback = 'local'
-        el.src = localVehicleImage(model)
+        if (step === '1') {
+          el.dataset.fallback = '2'
+          el.src = vehicleFallbackImage()
+        }
       }}
     />
   )

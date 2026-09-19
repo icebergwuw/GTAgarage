@@ -77,9 +77,18 @@ export interface StoredVehicle {
   notes?: string
 }
 
-export function vehicleImage(model: string) {
-  return `https://docs.fivem.net/vehicles/${model}.webp`
-}
+const localVehicleIds = new Set([
+  'caracara3',
+  'cartuccia',
+  'cyclone2',
+  'estride',
+  'horus',
+  'laufer',
+  'lrcgt',
+  'merula',
+  'velenogt',
+  'warden',
+])
 
 export function localVehicleImage(model: string) {
   return `${import.meta.env.BASE_URL}vehicles/${model}.webp`
@@ -87,6 +96,15 @@ export function localVehicleImage(model: string) {
 
 export function vehicleFallbackImage() {
   return `${import.meta.env.BASE_URL}car-fallback.svg`
+}
+
+export function hasLocalVehicleImage(model: string) {
+  return localVehicleIds.has(model)
+}
+
+export function vehicleImage(model: string) {
+  if (hasLocalVehicleImage(model)) return localVehicleImage(model)
+  return `https://docs.fivem.net/vehicles/${model}.webp`
 }
 
 export function formatCash(n: number) {
